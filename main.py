@@ -3,7 +3,8 @@ from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 
 import stats_and_upgrades
-
+import asyncio
+import time
 
 class UIOption:
     def __init__(self, name, key, function):
@@ -39,11 +40,17 @@ class Game:
     def _register_ui_option(self, ui_option):
         self.ui_options.append(ui_option)
         self.key_bindings.add(ui_option.key.lower())(getattr(self, ui_option.function))
-        
+        self.key_bindings.add(ui_option.key.upper())(getattr(self, ui_option.function))
     def show_upgrades(self, event=None):
         self.current_ui = "upgrades"
         event.app.exit()
-        self.show_ui()
+
+    # TODO: add passive income
+    def _passive_income(self):
+        while True:
+            time.sleep(1)
+            with self.lock:
+                self.stats.fish += self.stats.fish_per_second * self.stats.fish_per_second_multiplier
     
     def show_ui(self):
         self.clear_screen()
@@ -63,25 +70,32 @@ class Game:
             prompt("Press 'enter' to fish. ", key_bindings=self.key_bindings)
             if self.current_ui == "main":
                 self.stats.fish += self.stats.fish_per_enter * self.stats.fish_per_enter_multiplier
+                
+
         elif self.current_ui == "upgrades":
             print("Upgrades!~~")
+            print("Input E to exit")
             print(self.upgrades_status)
             for i in range(min(self.upgrades_shown, len(stats_and_upgrades.available_upgrades_list))):
                 upgrade = stats_and_upgrades.available_upgrades_list[i]
                 print(f"[{i}] {upgrade.name}: {upgrade.cost} fish [x{upgrade.level}]")
 
-            upgrade_index = int(prompt("Which upgrade would you like? ").strip())
-            chosen_upgrade = stats_and_upgrades.available_upgrades_list[upgrade_index]
-            self.upgrades_status = ""
-            if chosen_upgrade.cost > self.stats.fish:
-                self.upgrades_status = "Ur too poor for that"
+            upgrade_index = prompt("Which upgrade would you like? ").strip().upper()
+            if upgrade_index == "E":
+                self.current_ui = "main"
             else:
-                if chosen_upgrade not in self.stats.owned_upgrades:
-                    self.stats.owned_upgrades.append(chosen_upgrade)
-                chosen_upgrade.buy()
-                chosen_upgrade.effect.effect(self.stats)
-                self.stats.fish -= chosen_upgrade.cost
-                self.upgrades_status = f"Successful purchase of {chosen_upgrade.name}!"
+                upgrade_index = int(upgrade_index)
+                chosen_upgrade = stats_and_upgrades.available_upgrades_list[upgrade_index]
+                self.upgrades_status = ""
+                if chosen_upgrade.cost > self.stats.fish:
+                    self.upgrades_status = "Ur too poor for that"
+                else:
+                    if chosen_upgrade not in self.stats.owned_upgrades:
+                        self.stats.owned_upgrades.append(chosen_upgrade)
+                    self.stats.fish -= chosen_upgrade.cost
+                    chosen_upgrade.buy()
+                    chosen_upgrade.effect.effect(self.stats)
+                    self.upgrades_status = f"Successful purchase of {chosen_upgrade.name}!"
     
     
     def run_game(self):
