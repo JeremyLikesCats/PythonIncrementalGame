@@ -19,12 +19,13 @@ class UIOption:
 # You can either roll a good blessing or a bad blessing. 
 # Blessings give stat boosts and have special abilities.
 class Blessing:
-    def __init__(self, name, id, description, roll_weight, is_curse = False):
+    def __init__(self, name, id, description, roll_weight, is_curse = False, is_unique = False):
         self.name = name
         self.id = id
         self.description = description
         self.roll_weight = roll_weight
         self.is_curse = is_curse
+        self.is_unique = is_unique
         
         
 # Blessing of the fish - every second there is a 10% chance for you to gain 10x your fish per second and 1% chance for you to gain 100x your fish per second.
@@ -37,10 +38,15 @@ class CurseOfTheFish(Blessing):
     def do_effect(self, player_stats: stats_and_upgrades.PlayerStats):
         pass
 
-# Poseidon's Blessing - Your fish per second is scaled by the number of digits of fish you hand fished.
+# Poseidon's Blessing - Your fish per second is scaled by the 2 * number of digits of fish revenue you hand fished.
 class PoseidonsBlessing(Blessing):
     def do_effect(self, player_stats: stats_and_upgrades.PlayerStats):
-        player_stats.current_blessings.append(self)
+        pass
+
+# Mr. Blessing - Mr. Blessing himself! Gain 2 blessing slots. Only one can exist at the same time.
+class MrBlessing(Blessing):
+    def do_effect(self, player_stats: stats_and_upgrades.PlayerStats):
+        pass
 
 class Game:
     def clear_screen(self):
@@ -69,18 +75,20 @@ class Game:
         # BLESSINGS
         self.blessings_cost = 1000
         self.available_blessings = [
-            BlessingOfTheFish("Blessing of the Fish", "blessing_of_the_fish", " Every second there is a 10% chance for you to gain 10x your fish per second \n and a 1% chance for you to gain 100x your fish per second.", 2),
-            CurseOfTheFish("Curse of the Fish", "curse_of_the_fish", " Every second there is a 10% chance for you to not gain any fish.", 2, True),
-            PoseidonsBlessing("Poseidon's Blessing", "poseidons_blessing", " Your fish per second is scaled by the number of digits of fish you hand fished.", 1)
+            BlessingOfTheFish("Blessing of the Fish", "blessing_of_the_fish", " Every second there is a 10% chance for you to gain 10x your fish per second \n and a 1% chance for you to gain 100x your fish per second.", 4),
+            CurseOfTheFish("Curse of the Fish", "curse_of_the_fish", " Every second there is a 10% chance for you to not gain any fish.", 4, True),
+            PoseidonsBlessing("Poseidon's Blessing", "poseidons_blessing", " Your fish per second is scaled by 2x multiplied by number of digits of revenue from fish you *hand fished*.", 2),
+            MrBlessing("Mr. Blessing", "mr_blessing", " Gain 2 blessing slots. Only one of this blessing can exist at the same time.", 1, False, True)
         ]
         self.blessings_roller_status = ""
 
         # BASIC FISHING
         @self.key_bindings.add("enter")
         def _(event):
-            self.stats.fish += (
-                self._calculate_fish_per_enter()
-            )
+            self.add_fish(self._calculate_fish_per_enter())
+            self.stats.total_enter_revenue += self._calculate_fish_per_enter()
+            self.calculate_stats_from_blessings()
+            self.check_milestones() 
             event.app.invalidate()
             
         
@@ -98,27 +106,38 @@ class Game:
         self.current_ui = "blessings_roller"
         event.app.exit()
     
+    def add_fish(self, amount):
+        self.stats.fish += amount
+        self.stats.all_time_revenue += amount
+    
     async def _passive_income(self):
         
         while True:
+            
             await asyncio.sleep(1)
-            # Also Resets passive status
+            # Also Resets passive status + does the checks
+            
+            self.calculate_stats_from_blessings()
+            self.check_milestones()
+            
+            
             self.main_ui_passive_statuses = []
             previous_fish = self.stats.fish
-            self.stats.fish += self._calculate_fish_per_second()
-            
+            previous_all_time_revenue = self.stats.all_time_revenue
+            self.add_fish(self._calculate_fish_per_second())
             # Blessings that affect passive income
             for blessing in self.stats.current_blessings:
                 if blessing.id == "blessing_of_the_fish":
                     if random.randint(1, 100) <= 10:
-                        self.stats.fish += self._calculate_fish_per_second() * 10
-                        self.main_ui_passive_statuses.append(f"Blessing of the fish! +{self.stats.fish_per_second * self.stats.fish_per_second_multiplier * 10} ")
+                        self.add_fish(self._calculate_fish_per_second() * 10)
+                        self.main_ui_passive_statuses.append(f"Blessing of the fish! +{self._calculate_fish_per_second() * 10} ")
                     if random.randint(1, 100) <= 1:
-                        self.stats.fish += self._calculate_fish_per_second() * 100
-                        self.main_ui_passive_statuses.append(f"ULTIMATE Blessing of the fish! +{self.stats.fish_per_second * self.stats.fish_per_second_multiplier * 100}")
+                        self.add_fish(self._calculate_fish_per_second() * 100)
+                        self.main_ui_passive_statuses.append(f"ULTIMATE Blessing of the fish! +{self._calculate_fish_per_second() * 100}")
                 elif blessing.id == "curse_of_the_fish":
                     if random.randint(1, 100) <= 10:
                         self.stats.fish = previous_fish
+                        self.stats.all_time_revenue = previous_all_time_revenue
                         self.main_ui_passive_statuses.append(f"Curse of the fish. No fish was produced.")
             
     def _calculate_fish_per_second(self):
@@ -276,7 +295,7 @@ class Game:
                 if self.blessings_cost > self.stats.fish:
                     self.blessings_roller_status = "Ur too poor for that"
                 else:
-                    
+                    exit = False
                     blessing, probability = self.choose_random_blessing()
                     if len(self.stats.current_blessings) < self._calculate_max_blessings():
                         self.stats.current_blessings.append(blessing)
@@ -291,11 +310,18 @@ class Game:
                                                         refresh_interval=0.5
                                                     )
                             blessing_replace_index = blessing_replace_index.strip()
+                            if blessing_replace_index.upper() == "E":
+                                exit = True
+                                break
+                            
                             try:
                                 self.stats.current_blessings[int(blessing_replace_index.strip())] = blessing
                             except:
                                 self.blessings_roller_status = "Enter a valid index!"
                                 hasError = True
+                                
+                    if not exit:
+                        self.calculate_stats_from_blessings()
                         self.stats.fish -= self.blessings_cost
                         self.blessings_roller_status = f"Successful roll of the {blessing.name} blessing! ({probability * 100}% chance)"
             elif roll_blessing == "E" or roll_blessing == "N":
@@ -311,9 +337,13 @@ class Game:
         weights = [b.roll_weight for b in self.available_blessings]
         chosen = random.choices(self.available_blessings, weights=weights, k=1)[0]
         
+        while chosen.is_unique == True and chosen in self.stats.owned_upgrades:
+            chosen = random.choices(self.available_blessings, weights=weights, k=1)[0]
+        
         total_weight = sum(weights)
         chosen_index = self.available_blessings.index(chosen)
         probability = weights[chosen_index]/total_weight
+
         return chosen, probability
     
     def check_milestones(self):
@@ -328,8 +358,11 @@ class Game:
                 if upgrade.level == 5:
                     self._set_upgrades_shown_amount(2)
             if upgrade.id == "cat_boat":
-                if upgrade.level == 5:
+                if upgrade.level == 10:
                     self._set_upgrades_shown_amount(5)
+            if upgrade.id == "fish_farm":
+                if upgrade.level == 10:
+                    self._set_upgrades_shown_amount(8)
         # UPGRADE MILESTONES - MONEY MILESTONES
         # Unlock iron claws at 500 fish
         if self.stats.fish >= 500:
@@ -341,6 +374,7 @@ class Game:
         # UPGRADE MILESTONES - BLESSING MILESTONES
         if len(self.stats.current_blessings) > 0:
             self._set_upgrades_shown_amount(6)
+
         
         ## UI MILESTONES
         
@@ -348,6 +382,25 @@ class Game:
         if self.stats.fish >= 2000:
             if len(self.key_bindings.get_bindings_for_keys("b")) == 0:
                 self._register_ui_option(UIOption("Blessings Roller", "B", "show_blessings_roller"))
+    
+    def calculate_stats_from_blessings(self):
+        self.stats.fish_per_second["blessings"] = 0
+        self.stats.fish_per_second_multiplier["blessings_+"] = 0
+        self.stats.fish_per_second_multiplier["blessings_*"] = 1
+        self.stats.fish_per_enter["blessings"] = 0
+        self.stats.fish_per_enter_multiplier["blessings_+"] = 0
+        self.stats.fish_per_enter_multiplier["blessings_*"] = 1
+        self.stats.max_blessings["blessings"] = 0
+        
+        for blessing in self.stats.current_blessings:
+            
+            # Poseidon's Blessing
+            if blessing.id == "poseidons_blessing":
+                self.stats.fish_per_second_multiplier["blessings_*"] *= 2 * len(str(int(self.stats.total_enter_revenue)))
+                
+            # Mr. Blessing
+            if blessing.id == "mr_blessing":
+                self.stats.max_blessings["blessings"] += 2
     
     def _set_upgrades_shown_amount(self, amount):
         self.upgrades_shown = max(amount, self.upgrades_shown)
@@ -357,6 +410,7 @@ class Game:
     async def run_game(self):
         income_task = asyncio.create_task(self._passive_income())
         while True:
+            self.calculate_stats_from_blessings()
             self.check_milestones()
             await self.show_ui()
             

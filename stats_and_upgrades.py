@@ -9,17 +9,17 @@ class PlayerStats:
             "+": 1, #additive
             "*": 1, #multiplicative
             "blessings_+": 0,
-            "blessings_*": 0,
+            "blessings_*": 1,
         }
         self.fish_per_enter = {
-            "+": 0,
+            "+": 1,
             "blessings": 0
         }
         self.fish_per_enter_multiplier = {
             "+": 1, #additive
             "*": 1, #multiplicative
             "blessings_+": 0,
-            "blessings_*": 0,
+            "blessings_*": 1,
         }
         self.owned_upgrades = []
         self.current_blessings = []
@@ -27,6 +27,8 @@ class PlayerStats:
             "+": 1,
             "blessings": 0
         }
+        self.total_enter_revenue = 0
+        self.all_time_revenue = 0
 class Effect:
     def __init__(self, value):
         self.value = value
@@ -38,6 +40,10 @@ class AdditivePerSecondEffect(Effect):
 class AdditivePerEnterEffect(Effect):
     def do_effect(self, player_stats: PlayerStats):
         player_stats.fish_per_enter["+"] += self.value
+
+class AdditiveMultiplicativePerSecondEffect(Effect):
+    def do_effect(self, player_stats: PlayerStats):
+        player_stats.fish_per_second_multiplier["+"] *= self.value
 
 class MultiplicativeMultiplicativePerSecondEffect(Effect):
     def do_effect(self, player_stats: PlayerStats):
@@ -66,11 +72,13 @@ class Upgrade:
         
     
 available_upgrades = {
-    "fisher_cat": Upgrade("Fisher Cat", "fisher_cat", "A little cat that fishes 1 fish for you per second!" ,20, 1.07, AdditivePerSecondEffect(1)),
+    "fisher_cat": Upgrade("Fisher Cat", "fisher_cat", "A little cat that fishes +1 fish for you per second!" ,20, 1.07, AdditivePerSecondEffect(1)),
     "cat_boat": Upgrade("Cat Boat", "cat_boat", "The cat upgraded to a boat. +5 fish per second.", 100, 1.07, AdditivePerSecondEffect(5)),
     "iron_claws": Upgrade("Iron Claws", "iron_claws", "Sharp claws. One-time upgrade. +1 fish per enter hit.", 500, 1, AdditivePerEnterEffect(1), True),
-    "choccy_milk": Upgrade("Choccy Milk", "choccy_milk", "Choccy milk. Doubles your fish per second.", 1000, 1, MultiplicativeMultiplicativePerSecondEffect(2), True),
-    "fish_farm": Upgrade("Fish Farm", "fish_farm", "Woah a whole fish farm?? +20 fish per second.", 500, 1.07, AdditivePerSecondEffect(20)),
-    "blessed_halo": Upgrade("Blessed Halo", "blessed_halo", "This holy item provides you with an extra blessing slot.", 3000, 1, AddBlessingSlotEffect(1), True)
+    "fish_farm": Upgrade("Fish Farm", "fish_farm", "Woah a whole fish farm?? +20 fish per second.", 250, 1.07, AdditivePerSecondEffect(20)),
+    "blessed_halo": Upgrade("Blessed Halo", "blessed_halo", "This holy item provides you with an extra blessing slot.", 3000, 1, AddBlessingSlotEffect(1), True),
+    "golden_claws": Upgrade("Golden Claws", "golden_claws", "Even sharper claws. One-time upgrade. +1 fish per enter hit.", 1000, 1, AdditivePerEnterEffect(1), True),
+    "milk": Upgrade("Milk", "milk", "This milk tastes strange... at least it makes your fish generation 100% faster!", 2000, 1, AdditivePerEnterEffect(1), True),
+    "fish_factory": Upgrade("Fish Factory", "fish_factory", "This fish factory mass produces +100 fish every second.", 1000, 1.07, AdditivePerSecondEffect(100))
 }
 available_upgrades_list = list(available_upgrades.values())
