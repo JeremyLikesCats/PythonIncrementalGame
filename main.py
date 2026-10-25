@@ -43,7 +43,7 @@ class CurseOfTheFish(Blessing):
     def do_effect(self, player_stats: stats_and_upgrades.PlayerStats):
         pass
 
-# Poseidon's Blessing - Your fish per second is scaled by the 2 * number of digits of fish revenue you hand fished.
+# Poseidon's Blessing - Your fish per second is scaled by the 1.5 * number of digits of fish revenue you hand fished.
 class PoseidonsBlessing(Blessing):
     def do_effect(self, player_stats: stats_and_upgrades.PlayerStats):
         pass
@@ -92,7 +92,7 @@ class Game:
         self.available_blessings = [
             BlessingOfTheFish("Blessing of the Fish", "blessing_of_the_fish", " Every second there is a 10% chance for you to gain 10x your fish per second \n and a 1% chance for you to gain 100x your fish per second.", 4),
             CurseOfTheFish("Curse of the Fish", "curse_of_the_fish", " Every second there is a 10% chance for you to not gain any fish.", 4, True),
-            PoseidonsBlessing("Poseidon's Blessing", "poseidons_blessing", " Your fish per second is scaled by 2x multiplied by number of digits of revenue from fish you *hand fished*.", 2),
+            PoseidonsBlessing("Poseidon's Blessing", "poseidons_blessing", " Your fish per second is scaled by 1.5x multiplied by number of digits of revenue from fish you *hand fished*.", 2),
             MrBlessing("Mr. Blessing", "mr_blessing", " Gain 2 blessing slots. Only one of this blessing can exist at the same time.", 1, False, True),
             BartonCurse("Barton's Curse", "bartoncurse", " Barton comes out of no where and takes 5% of your fish every 10 seconds.  ", 2, True, False)
             
@@ -486,7 +486,7 @@ class Game:
             
             # Poseidon's Blessing
             if blessing.id == "poseidons_blessing":
-                self.stats.fish_per_second_multiplier["blessings_*"] *= 2 * len(str(int(self.stats.total_enter_revenue)))
+                self.stats.fish_per_second_multiplier["blessings_*"] *= 1.5 * len(str(int(self.stats.total_enter_revenue)))
                 
             # Mr. Blessing
             if blessing.id == "mr_blessing":

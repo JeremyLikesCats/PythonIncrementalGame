@@ -75,7 +75,7 @@ available_upgrades = {
     "fisher_cat": Upgrade("Fisher Cat", "fisher_cat", "A little cat that fishes +1 fish for you per second!" ,20, 1.07, AdditivePerSecondEffect(1)),
     "cat_boat": Upgrade("Cat Boat", "cat_boat", "The cat upgraded to a boat. +5 fish per second.", 100, 1.07, AdditivePerSecondEffect(5)),
     "iron_claws": Upgrade("Iron Claws", "iron_claws", "Sharp claws. One-time upgrade. +1 fish per enter hit.", 500, 1, AdditivePerEnterEffect(1), True),
-    "fish_farm": Upgrade("Fish Farm", "fish_farm", "Woah a whole fish farm?? +20 fish per second.", 250, 1.07, AdditivePerSecondEffect(20)),
+    "fish_farm": Upgrade("Fish Farm", "fish_farm", "Woah a whole fish farm?? +20 fish per second.", 500, 1.07, AdditivePerSecondEffect(20)),
     "fish_factory": Upgrade("Fish Factory", "fish_factory", "This fish factory mass produces +100 fish every second.", 1000, 1.07, AdditivePerSecondEffect(100)),
     "golden_claws": Upgrade("Golden Claws", "golden_claws", "Even sharper claws. One-time upgrade. +1 fish per enter hit.", 4000, 1, AdditivePerEnterEffect(1), True),
     "blessed_halo": Upgrade("Blessed Halo", "blessed_halo", "This holy item provides you with an extra blessing slot.", 6000, 1, AddBlessingSlotEffect(1), True),
