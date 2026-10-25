@@ -1,6 +1,6 @@
 class PlayerStats:
     def __init__(self):
-        self.fish = 10000
+        self.fish = 0
         self.fish_per_second = {
             "+": 0,
             "blessings": 0
@@ -76,9 +76,10 @@ available_upgrades = {
     "cat_boat": Upgrade("Cat Boat", "cat_boat", "The cat upgraded to a boat. +5 fish per second.", 100, 1.07, AdditivePerSecondEffect(5)),
     "iron_claws": Upgrade("Iron Claws", "iron_claws", "Sharp claws. One-time upgrade. +1 fish per enter hit.", 500, 1, AdditivePerEnterEffect(1), True),
     "fish_farm": Upgrade("Fish Farm", "fish_farm", "Woah a whole fish farm?? +20 fish per second.", 250, 1.07, AdditivePerSecondEffect(20)),
-    "blessed_halo": Upgrade("Blessed Halo", "blessed_halo", "This holy item provides you with an extra blessing slot.", 3000, 1, AddBlessingSlotEffect(1), True),
-    "golden_claws": Upgrade("Golden Claws", "golden_claws", "Even sharper claws. One-time upgrade. +1 fish per enter hit.", 1000, 1, AdditivePerEnterEffect(1), True),
-    "milk": Upgrade("Milk", "milk", "This milk tastes strange... at least it makes your fish generation 100% faster!", 2000, 1, AdditiveMultiplicativePerSecondEffect(1), True),
-    "fish_factory": Upgrade("Fish Factory", "fish_factory", "This fish factory mass produces +100 fish every second.", 1000, 1.07, AdditivePerSecondEffect(100))
+    "fish_factory": Upgrade("Fish Factory", "fish_factory", "This fish factory mass produces +100 fish every second.", 1000, 1.07, AdditivePerSecondEffect(100)),
+    "golden_claws": Upgrade("Golden Claws", "golden_claws", "Even sharper claws. One-time upgrade. +1 fish per enter hit.", 4000, 1, AdditivePerEnterEffect(1), True),
+    "blessed_halo": Upgrade("Blessed Halo", "blessed_halo", "This holy item provides you with an extra blessing slot.", 6000, 1, AddBlessingSlotEffect(1), True),
+    "milk": Upgrade("Milk", "milk", "This milk tastes strange... at least it makes your fish generation 100% faster!", 8000, 1, AdditiveMultiplicativePerSecondEffect(1), True),
+    
 }
 available_upgrades_list = list(available_upgrades.values())

@@ -81,7 +81,7 @@ class Game:
         
         
         # BLESSINGS
-        self.blessings_cost = 1000
+        self.blessings_cost = 5000
         self.available_blessings = [
             BlessingOfTheFish("Blessing of the Fish", "blessing_of_the_fish", " Every second there is a 10% chance for you to gain 10x your fish per second \n and a 1% chance for you to gain 100x your fish per second.", 4),
             CurseOfTheFish("Curse of the Fish", "curse_of_the_fish", " Every second there is a 10% chance for you to not gain any fish.", 4, True),
@@ -102,6 +102,12 @@ class Game:
         self.load_game()
     
     def save_and_exit(self, event=None, filename = "save_data.json"):
+        self.save()
+        self.running = False
+        if event:
+            event.app.exit()
+    
+    def save(self, filename = "save_data.json"):
         save_data = {
             "fish": self.stats.fish,
             "total_enter_revenue": self.stats.total_enter_revenue,
@@ -114,9 +120,6 @@ class Game:
         }
         with open(filename, "w") as f:
             json.dump(save_data, f, indent=4)
-        self.running = False
-        if event:
-            event.app.exit()
     
     def load_game(self, filename="save_data.json"):
         if not os.path.exists(filename):
@@ -174,6 +177,9 @@ class Game:
             
             await asyncio.sleep(1)
             # Also Resets passive status + does the checks
+            
+            # Autosave
+            self.save()
             
             self.calculate_stats_from_blessings()
             self.check_milestones()
@@ -417,27 +423,28 @@ class Game:
                     self._set_upgrades_shown_amount(2)
             if upgrade.id == "cat_boat":
                 if upgrade.level >= 10:
-                    self._set_upgrades_shown_amount(5)
+                    self._set_upgrades_shown_amount(4)
             if upgrade.id == "fish_farm":
                 if upgrade.level >= 10:
-                    self._set_upgrades_shown_amount(8)
+                    self._set_upgrades_shown_amount(5)
+            if upgrade.id == "fish_factory":
+                if upgrade.level >= 10:
+                    self._set_upgrades_shown_amount(9)
         # UPGRADE MILESTONES - MONEY MILESTONES
         # Unlock iron claws at 500 fish
-        if self.stats.fish >= 500:
+        if self.stats.all_time_revenue >= 500:
             self._set_upgrades_shown_amount(3)
-        
-        if self.stats.fish >= 1000:
-            self._set_upgrades_shown_amount(4)
+
             
         # UPGRADE MILESTONES - BLESSING MILESTONES
         if len(self.stats.current_blessings) > 0:
-            self._set_upgrades_shown_amount(6)
+            self._set_upgrades_shown_amount(7)
 
         
         ## UI MILESTONES
         
         # UI MILESTONES - MONEY MILESTONES
-        if self.stats.all_time_revenue >= 3000:
+        if self.stats.all_time_revenue >= 6000:
             if len(self.key_bindings.get_bindings_for_keys("b")) == 0:
                 self._register_ui_option(UIOption("Blessings Roller", "B", "show_blessings_roller"))
     

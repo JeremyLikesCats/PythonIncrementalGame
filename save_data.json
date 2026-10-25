@@ -1,20 +1,18 @@
 {
-    "fish": 313854.2001703577,
-    "total_enter_revenue": 20,
-    "all_time_revenue": 336615,
-    "upgrades_shown": 8,
+    "fish": 190860.56145844914,
+    "total_enter_revenue": 403,
+    "all_time_revenue": 245915,
+    "upgrades_shown": 7,
     "owned_upgrades": {
-        "cat_boat": 1,
+        "fisher_cat": 10,
+        "cat_boat": 10,
         "iron_claws": 1,
-        "fish_farm": 11,
-        "blessed_halo": 1,
-        "milk": 1,
-        "fish_factory": 3
+        "fish_farm": 2,
+        "fish_factory": 19,
+        "golden_claws": 1,
+        "blessed_halo": 1
     },
     "current_blessings": [
-        "blessing_of_the_fish",
-        "mr_blessing",
-        "blessing_of_the_fish",
         "poseidons_blessing"
     ]
 }
