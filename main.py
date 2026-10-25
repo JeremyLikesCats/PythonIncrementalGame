@@ -6,6 +6,9 @@ from prompt_toolkit.key_binding import KeyBindings
 import stats_and_upgrades
 import asyncio
 import random
+import json 
+import os
+
 
 class UIOption:
     def __init__(self, name, key, function):
@@ -53,6 +56,9 @@ class Game:
         print("\033[H\033[2J", end="")
         
     def __init__(self):
+        
+        self.running = True
+        
         # Initialize Prompt toolkit bindings
         
         self.key_bindings = KeyBindings()
@@ -69,8 +75,10 @@ class Game:
         # UPGRADES UI
         self.upgrades_shown = 1
         self.upgrades_status = "" # Text shown in upgrades_ui
-
+        self._register_ui_option(UIOption("Save & Exit", "Q", "save_and_exit"))
+                
         self._register_ui_option(UIOption("Upgrades", "U", "show_upgrades"))
+        
         
         # BLESSINGS
         self.blessings_cost = 1000
@@ -90,9 +98,59 @@ class Game:
             self.calculate_stats_from_blessings()
             self.check_milestones() 
             event.app.invalidate()
-            
         
+        self.load_game()
+    
+    def save_and_exit(self, event=None, filename = "save_data.json"):
+        save_data = {
+            "fish": self.stats.fish,
+            "total_enter_revenue": self.stats.total_enter_revenue,
+            "all_time_revenue": self.stats.all_time_revenue,
+            "upgrades_shown": self.upgrades_shown,
+            "owned_upgrades": {
+                u.id: u.level for u in stats_and_upgrades.available_upgrades_list if u.level > 0
+            },
+            "current_blessings": [b.id for b in self.stats.current_blessings],
+        }
+        with open(filename, "w") as f:
+            json.dump(save_data, f, indent=4)
+        self.running = False
+        if event:
+            event.app.exit()
+    
+    def load_game(self, filename="save_data.json"):
+        if not os.path.exists(filename):
+            return
+        
+        with open(filename, "r") as f:
+            save_data = json.load(f)
             
+            self.stats = stats_and_upgrades.PlayerStats()
+            self.stats.fish = save_data.get("fish", 0)
+            self.stats.total_enter_revenue = save_data.get("total_enter_revenue", 0)
+            self.stats.all_time_revenue = save_data.get("all_time_revenue", 0)
+            self.upgrades_shown = save_data.get("upgrades_shown", 1)
+            
+            owned_upgrades_data = save_data.get("owned_upgrades", {})
+            for upgrade_id, level in owned_upgrades_data.items():
+                upgrade = stats_and_upgrades.available_upgrades[upgrade_id]
+                upgrade.level = 0
+                for _ in range(level):
+                    upgrade.buy()
+                    upgrade.effect.do_effect(self.stats)
+                
+                if upgrade not in self.stats.owned_upgrades:
+                    self.stats.owned_upgrades.append(upgrade)
+                    
+            current_blessings_data = save_data.get("current_blessings", [])
+            blessing_map = {b.id: b for b in self.available_blessings}
+            for blessing in current_blessings_data:
+                self.stats.current_blessings.append(blessing_map[blessing])
+                
+            self.check_milestones()
+            self.calculate_stats_from_blessings()
+            
+                
     def _register_ui_option(self, ui_option):
         self.ui_options.append(ui_option)
         self.key_bindings.add(ui_option.key.lower())(getattr(self, ui_option.function))
@@ -337,7 +395,7 @@ class Game:
         weights = [b.roll_weight for b in self.available_blessings]
         chosen = random.choices(self.available_blessings, weights=weights, k=1)[0]
         
-        while chosen.is_unique == True and chosen in self.stats.owned_upgrades:
+        while chosen.is_unique == True and chosen in self.stats.current_blessings:
             chosen = random.choices(self.available_blessings, weights=weights, k=1)[0]
         
         total_weight = sum(weights)
@@ -355,13 +413,13 @@ class Game:
         for upgrade in self.stats.owned_upgrades:
             # Unlock Boat Cat at fisher cat lvl 5
             if upgrade.id == "fisher_cat":
-                if upgrade.level == 5:
+                if upgrade.level >= 5:
                     self._set_upgrades_shown_amount(2)
             if upgrade.id == "cat_boat":
-                if upgrade.level == 10:
+                if upgrade.level >= 10:
                     self._set_upgrades_shown_amount(5)
             if upgrade.id == "fish_farm":
-                if upgrade.level == 10:
+                if upgrade.level >= 10:
                     self._set_upgrades_shown_amount(8)
         # UPGRADE MILESTONES - MONEY MILESTONES
         # Unlock iron claws at 500 fish
@@ -379,7 +437,7 @@ class Game:
         ## UI MILESTONES
         
         # UI MILESTONES - MONEY MILESTONES
-        if self.stats.fish >= 2000:
+        if self.stats.all_time_revenue >= 3000:
             if len(self.key_bindings.get_bindings_for_keys("b")) == 0:
                 self._register_ui_option(UIOption("Blessings Roller", "B", "show_blessings_roller"))
     
@@ -409,10 +467,12 @@ class Game:
     
     async def run_game(self):
         income_task = asyncio.create_task(self._passive_income())
-        while True:
+        while self.running:
             self.calculate_stats_from_blessings()
             self.check_milestones()
             await self.show_ui()
+        income_task.cancel()
+        self.clear_screen()
             
             
         
