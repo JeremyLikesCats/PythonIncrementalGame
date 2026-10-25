@@ -1,13 +1,13 @@
 class PlayerStats:
     def __init__(self):
-        self.fish = 1000
+        self.fish = 10000
         self.fish_per_second = 0
         self.fish_per_second_multiplier = 1
         self.fish_per_enter = 1
         self.fish_per_enter_multiplier = 1
         self.owned_upgrades = []
         self.current_blessings = []
-        self.max_blessings = 1
+        self.max_blessings = 2
 class Effect:
     def __init__(self, value):
         self.value = value
