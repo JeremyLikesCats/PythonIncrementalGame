@@ -3,6 +3,8 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.formatted_text import HTML
+
 import stats_and_upgrades
 import asyncio
 import random
@@ -51,6 +53,11 @@ class MrBlessing(Blessing):
     def do_effect(self, player_stats: stats_and_upgrades.PlayerStats):
         pass
 
+# The curse of barton - Barton comes out of no where and takes 5% of your fish every set time interval
+class BartonCurse(Blessing):
+    def do_effect(self, player_stats: stats_and_upgrades.PlayerStats):
+        pass
+
 class Game:
     def clear_screen(self):
         print("\033[H\033[2J", end="")
@@ -75,7 +82,7 @@ class Game:
         # UPGRADES UI
         self.upgrades_shown = 1
         self.upgrades_status = "" # Text shown in upgrades_ui
-        self._register_ui_option(UIOption("Save & Exit", "Q", "save_and_exit"))
+        self._register_ui_option(UIOption("Save and Exit", "Q", "save_and_exit"))
                 
         self._register_ui_option(UIOption("Upgrades", "U", "show_upgrades"))
         
@@ -86,7 +93,9 @@ class Game:
             BlessingOfTheFish("Blessing of the Fish", "blessing_of_the_fish", " Every second there is a 10% chance for you to gain 10x your fish per second \n and a 1% chance for you to gain 100x your fish per second.", 4),
             CurseOfTheFish("Curse of the Fish", "curse_of_the_fish", " Every second there is a 10% chance for you to not gain any fish.", 4, True),
             PoseidonsBlessing("Poseidon's Blessing", "poseidons_blessing", " Your fish per second is scaled by 2x multiplied by number of digits of revenue from fish you *hand fished*.", 2),
-            MrBlessing("Mr. Blessing", "mr_blessing", " Gain 2 blessing slots. Only one of this blessing can exist at the same time.", 1, False, True)
+            MrBlessing("Mr. Blessing", "mr_blessing", " Gain 2 blessing slots. Only one of this blessing can exist at the same time.", 1, False, True),
+            BartonCurse("Barton's Curse", "bartoncurse", " Barton comes out of no where and takes 5% of your fish every 10 seconds.  ", 2, True, False)
+            
         ]
         self.blessings_roller_status = ""
 
@@ -172,12 +181,12 @@ class Game:
         self.stats.all_time_revenue += amount
     
     async def _passive_income(self):
-        
+        seconds_elapsed = 0
         while True:
             
             await asyncio.sleep(1)
             # Also Resets passive status + does the checks
-            
+            seconds_elapsed += 1
             # Autosave
             self.save()
             
@@ -203,7 +212,13 @@ class Game:
                         self.stats.fish = previous_fish
                         self.stats.all_time_revenue = previous_all_time_revenue
                         self.main_ui_passive_statuses.append(f"Curse of the fish. No fish was produced.")
-            
+                elif blessing.id == "bartoncurse":
+                    if seconds_elapsed % 10 == 0:
+                        stolen = self.stats.fish * 0.05
+                        self.stats.fish -= stolen
+                        self.main_ui_passive_statuses.append(f"Barton's Curse! Barton took {int(stolen)} fish!")
+                        
+                
     def _calculate_fish_per_second(self):
         return (self.stats.fish_per_second["+"] + self.stats.fish_per_second["blessings"]) * ((self.stats.fish_per_second_multiplier["+"] + self.stats.fish_per_second_multiplier["blessings_+"]) * (self.stats.fish_per_second_multiplier["*"] * self.stats.fish_per_second_multiplier["blessings_*"]))
     def _calculate_fish_per_enter(self):
@@ -212,22 +227,28 @@ class Game:
         return self.stats.max_blessings["+"] + self.stats.max_blessings["blessings"]  
     
     def _main_screen_ui(self):
-        options = "  ".join(opt.formatted() for opt in self.ui_options)
+        # Color each option button cyan
+        options = "  ".join(f"<ansicyan>{opt.formatted()}</ansicyan>" for opt in self.ui_options)
         
-        main_ui_passive_status = "".join([f" ({i.strip()})" for i in self.main_ui_passive_statuses])
-        return (
-            f"Fish_TerminalOS 3.0\n\n"
-            f"Options:\n{options}\n\n"
-            f"Fish: {self.stats.fish} (+{self._calculate_fish_per_second()} fish/s){main_ui_passive_status}\n"
-            f"Press 'enter' to fish. "
+        # Color passive statuses yellow
+        main_ui_passive_status = "".join([f" <ansiyellow>({i.strip()})</ansiyellow>" for i in self.main_ui_passive_statuses])
+        
+        # Wrap the entire return string in HTML(...)
+        return HTML(
+            f"<b><ansibrightcyan>Fish_TerminalOS 3.0</ansibrightcyan></b>\n\n"
+            f"<b>Options:</b>\n{options}\n\n"
+            f"<b>Fish:</b> <ansiyellow>{int(self.stats.fish)}</ansiyellow> "
+            f"<ansigray>(+{int(self._calculate_fish_per_second())} fish/s)</ansigray>{main_ui_passive_status}\n"
+            f"Press <b>'enter'</b> to fish. "
         )
+
         
     def _get_upgrades_prompt(self):
         lines = [
-            "Upgrades!~~",
-            "Input E to exit",
-            f"Fish: {self.stats.fish} (+{self._calculate_fish_per_second()} fish/s)",
-            self.upgrades_status,
+            "<ansiblue><b>Upgrades!~~</b></ansiblue>",
+            "Input <b>E</b> to exit",
+            f"<b>Fish:</b> <ansiyellow>{int(self.stats.fish)}</ansiyellow> <ansigray>(+{int(self._calculate_fish_per_second())} fish/s)</ansigray>",
+            f"<ansibrightcyan>{self.upgrades_status}</ansibrightcyan>",
         ]
         i = 0
         count = 0
@@ -237,7 +258,7 @@ class Game:
             if upgrade.is_one_time and upgrade.level > 0:
                 i += 1
                 continue
-            lines.append(f"[{count}] {upgrade.name}: {upgrade.cost} fish [x{upgrade.level}]")
+            lines.append(f"[<ansigreen>{count}</ansigreen>] <b>{upgrade.name}</b>: <ansiyellow> {upgrade.cost}</ansiyellow> fish [x{upgrade.level}]")
             lines.append(f"{upgrade.description}")
             lines.append("")
             i += 1
@@ -245,14 +266,14 @@ class Game:
 
         lines.append("Which upgrade would you like? ")
         
-        return "\n".join(lines)
+        return HTML("\n".join(lines))
         
     def _get_blessings_roller_prompt(self):
         lines = [
-            "BLESSINGS ROLLER",
-            "Input E to exit",
-            f"Fish: {self.stats.fish} (+{self._calculate_fish_per_second()} fish/s)",
-            self.blessings_roller_status,
+            "<ansiblue><b>BLESSINGS ROLLER</b></ansiblue>",
+            "Input <b>E</b> to exit",
+            f"<b>Fish:</b> <ansiyellow>{int(self.stats.fish)}</ansiyellow> <ansigray>(+{int(self._calculate_fish_per_second())} fish/s)</ansigray>",
+            f"<ansibrightcyan>{self.blessings_roller_status}</ansibrightcyan>",
             "",
             "My blessings:"
         ]
@@ -267,28 +288,28 @@ class Game:
         lines.append("")
         lines.append(f"Would you like to roll a blessing ({self.blessings_cost} fish)? (Y/N) ")
         
-        return "\n".join(lines)
+        return HTML("\n".join(lines))
         
     def _get_blessings_roller_choice_prompt(self):
         lines = [
-            "BLESSINGS ROLLER",
-            "Input E to exit",
-            f"Current Fish: {self.stats.fish}",
-            self.blessings_roller_status,
+            "<ansiblue><b>BLESSINGS ROLLER</b></ansiblue>",
+            "Input <b>E</b> to exit",
+            f"<b>Fish:</b> <ansiyellow>{int(self.stats.fish)}</ansiyellow> <ansigray>(+{int(self._calculate_fish_per_second())} fish/s)</ansigray>",
+            f"<ansibrightcyan>{self.blessings_roller_status}</ansibrightcyan>",
             "",
             "My blessings:"
         ]
         for blessing_index in range(self._calculate_max_blessings()):
             if blessing_index >= len(self.stats.current_blessings):
-                lines.append(f"[{blessing_index}] None")
+                lines.append(f"[<ansigreen>{blessing_index}</ansigreen>] None")
             else:
                 blessing = self.stats.current_blessings[blessing_index]
-                lines.append(f"[{blessing_index}] {blessing.name}")
+                lines.append(f"[<ansigreen>{blessing_index}</ansigreen>] {blessing.name}")
                 lines.append(blessing.description)
 
         lines.append("")
         lines.append("Choose Blessing number to replace: ")
-        return "\n".join(lines)
+        return HTML("\n".join(lines))
     
     
     async def show_ui(self):
@@ -469,8 +490,7 @@ class Game:
     
     def _set_upgrades_shown_amount(self, amount):
         self.upgrades_shown = max(amount, self.upgrades_shown)
-                    
-            
+        
     
     async def run_game(self):
         income_task = asyncio.create_task(self._passive_income())

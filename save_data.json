@@ -1,10 +1,10 @@
 {
-    "fish": 190860.56145844914,
-    "total_enter_revenue": 403,
-    "all_time_revenue": 245915,
-    "upgrades_shown": 7,
+    "fish": 17569036.429665275,
+    "total_enter_revenue": 418,
+    "all_time_revenue": 80663918,
+    "upgrades_shown": 9,
     "owned_upgrades": {
-        "fisher_cat": 10,
+        "fisher_cat": 16,
         "cat_boat": 10,
         "iron_claws": 1,
         "fish_farm": 2,
@@ -13,6 +13,9 @@
         "blessed_halo": 1
     },
     "current_blessings": [
-        "poseidons_blessing"
+        "poseidons_blessing",
+        "curse_of_the_fish",
+        "bartoncurse",
+        "bartoncurse"
     ]
 }
