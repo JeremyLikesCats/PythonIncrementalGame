@@ -30,13 +30,17 @@ class Blessing:
 # Blessing of the fish - every second there is a 10% chance for you to gain 10x your fish per second and 1% chance for you to gain 100x your fish per second.
 class BlessingOfTheFish(Blessing):
     def do_effect(self, player_stats: stats_and_upgrades.PlayerStats):
-        player_stats.current_blessings.append(self)
+        pass
     
 # Curse of the fish - every second there is a 10% chance that you don't gain any money.
 class CurseOfTheFish(Blessing):
     def do_effect(self, player_stats: stats_and_upgrades.PlayerStats):
-        player_stats.current_blessings.append(self)
+        pass
 
+# Poseidon's Blessing - Your fish per second is scaled by the number of digits of fish you hand fished.
+class PoseidonsBlessing(Blessing):
+    def do_effect(self, player_stats: stats_and_upgrades.PlayerStats):
+        player_stats.current_blessings.append(self)
 
 class Game:
     def clear_screen(self):
@@ -65,8 +69,9 @@ class Game:
         # BLESSINGS
         self.blessings_cost = 1000
         self.available_blessings = [
-            BlessingOfTheFish("Blessing of the Fish", "blessing_of_the_fish", " Every second there is a 10% chance for you to gain 10x your fish per second \n and a 1% chance for you to gain 100x your fish per second.", 1),
-            CurseOfTheFish("Curse of the Fish", "curse_of_the_fish", " Every second there is a 10% chance for you to not gain any fish.", 1),
+            BlessingOfTheFish("Blessing of the Fish", "blessing_of_the_fish", " Every second there is a 10% chance for you to gain 10x your fish per second \n and a 1% chance for you to gain 100x your fish per second.", 2),
+            CurseOfTheFish("Curse of the Fish", "curse_of_the_fish", " Every second there is a 10% chance for you to not gain any fish.", 2, True),
+            PoseidonsBlessing("Poseidon's Blessing", "poseidons_blessing", " Your fish per second is scaled by the number of digits of fish you hand fished.", 1)
         ]
         self.blessings_roller_status = ""
 
@@ -74,7 +79,7 @@ class Game:
         @self.key_bindings.add("enter")
         def _(event):
             self.stats.fish += (
-                self.stats.fish_per_enter * self.stats.fish_per_enter_multiplier
+                self._calculate_fish_per_enter()
             )
             event.app.invalidate()
             
@@ -100,22 +105,29 @@ class Game:
             # Also Resets passive status
             self.main_ui_passive_statuses = []
             previous_fish = self.stats.fish
-            self.stats.fish += self.stats.fish_per_second * self.stats.fish_per_second_multiplier
+            self.stats.fish += self._calculate_fish_per_second()
             
             # Blessings that affect passive income
             for blessing in self.stats.current_blessings:
                 if blessing.id == "blessing_of_the_fish":
                     if random.randint(1, 100) <= 10:
-                        self.stats.fish += self.stats.fish_per_second * self.stats.fish_per_second_multiplier * 10
+                        self.stats.fish += self._calculate_fish_per_second() * 10
                         self.main_ui_passive_statuses.append(f"Blessing of the fish! +{self.stats.fish_per_second * self.stats.fish_per_second_multiplier * 10} ")
                     if random.randint(1, 100) <= 1:
-                        self.stats.fish += self.stats.fish_per_second * self.stats.fish_per_second_multiplier * 100
+                        self.stats.fish += self._calculate_fish_per_second() * 100
                         self.main_ui_passive_statuses.append(f"ULTIMATE Blessing of the fish! +{self.stats.fish_per_second * self.stats.fish_per_second_multiplier * 100}")
                 elif blessing.id == "curse_of_the_fish":
                     if random.randint(1, 100) <= 10:
                         self.stats.fish = previous_fish
                         self.main_ui_passive_statuses.append(f"Curse of the fish. No fish was produced.")
             
+    def _calculate_fish_per_second(self):
+        return (self.stats.fish_per_second["+"] + self.stats.fish_per_second["blessings"]) * ((self.stats.fish_per_second_multiplier["+"] + self.stats.fish_per_second_multiplier["blessings_+"]) * (self.stats.fish_per_second_multiplier["*"] * self.stats.fish_per_second_multiplier["blessings_*"]))
+    def _calculate_fish_per_enter(self):
+        return (self.stats.fish_per_enter["+"] + self.stats.fish_per_enter["blessings"]) * ((self.stats.fish_per_enter_multiplier["+"] + self.stats.fish_per_enter_multiplier["blessings_+"]) * (self.stats.fish_per_enter_multiplier["*"] * self.stats.fish_per_enter_multiplier["blessings_*"]))
+    def _calculate_max_blessings(self):
+        return self.stats.max_blessings["+"] + self.stats.max_blessings["blessings"]  
+    
     def _main_screen_ui(self):
         options = "  ".join(opt.formatted() for opt in self.ui_options)
         
@@ -123,7 +135,7 @@ class Game:
         return (
             f"Fish_TerminalOS 3.0\n\n"
             f"Options:\n{options}\n\n"
-            f"Fish: {self.stats.fish} (+{self.stats.fish_per_second * self.stats.fish_per_second_multiplier} fish/s){main_ui_passive_status}\n"
+            f"Fish: {self.stats.fish} (+{self._calculate_fish_per_second()} fish/s){main_ui_passive_status}\n"
             f"Press 'enter' to fish. "
         )
         
@@ -131,7 +143,7 @@ class Game:
         lines = [
             "Upgrades!~~",
             "Input E to exit",
-            f"Current Fish: {self.stats.fish}",
+            f"Fish: {self.stats.fish} (+{self._calculate_fish_per_second()} fish/s)",
             self.upgrades_status,
         ]
         i = 0
@@ -156,12 +168,12 @@ class Game:
         lines = [
             "BLESSINGS ROLLER",
             "Input E to exit",
-            f"Current Fish: {self.stats.fish}",
+            f"Fish: {self.stats.fish} (+{self._calculate_fish_per_second()} fish/s)",
             self.blessings_roller_status,
             "",
             "My blessings:"
         ]
-        for blessing_index in range(self.stats.max_blessings):
+        for blessing_index in range(self._calculate_max_blessings()):
             if blessing_index >= len(self.stats.current_blessings):
                 lines.append(f"[{blessing_index}] None")
             else:
@@ -183,7 +195,7 @@ class Game:
             "",
             "My blessings:"
         ]
-        for blessing_index in range(self.stats.max_blessings):
+        for blessing_index in range(self._calculate_max_blessings()):
             if blessing_index >= len(self.stats.current_blessings):
                 lines.append(f"[{blessing_index}] None")
             else:
@@ -266,7 +278,7 @@ class Game:
                 else:
                     
                     blessing, probability = self.choose_random_blessing()
-                    if len(self.stats.current_blessings) < self.stats.max_blessings:
+                    if len(self.stats.current_blessings) < self._calculate_max_blessings():
                         self.stats.current_blessings.append(blessing)
                     else:
                         hasError = True

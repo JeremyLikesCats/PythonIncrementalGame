@@ -1,32 +1,51 @@
 class PlayerStats:
     def __init__(self):
         self.fish = 10000
-        self.fish_per_second = 0
-        self.fish_per_second_multiplier = 1
-        self.fish_per_enter = 1
-        self.fish_per_enter_multiplier = 1
+        self.fish_per_second = {
+            "+": 0,
+            "blessings": 0
+        }
+        self.fish_per_second_multiplier = {
+            "+": 1, #additive
+            "*": 1, #multiplicative
+            "blessings_+": 0,
+            "blessings_*": 0,
+        }
+        self.fish_per_enter = {
+            "+": 0,
+            "blessings": 0
+        }
+        self.fish_per_enter_multiplier = {
+            "+": 1, #additive
+            "*": 1, #multiplicative
+            "blessings_+": 0,
+            "blessings_*": 0,
+        }
         self.owned_upgrades = []
         self.current_blessings = []
-        self.max_blessings = 1
+        self.max_blessings = {
+            "+": 1,
+            "blessings": 0
+        }
 class Effect:
     def __init__(self, value):
         self.value = value
 
 class AdditivePerSecondEffect(Effect):
     def do_effect(self, player_stats: PlayerStats):
-        player_stats.fish_per_second += self.value
+        player_stats.fish_per_second["+"] += self.value
 
 class AdditivePerEnterEffect(Effect):
     def do_effect(self, player_stats: PlayerStats):
-        player_stats.fish_per_enter += self.value
+        player_stats.fish_per_enter["+"] += self.value
 
 class MultiplicativeMultiplicativePerSecondEffect(Effect):
     def do_effect(self, player_stats: PlayerStats):
-            player_stats.fish_per_second_multiplier *= self.value
+            player_stats.fish_per_second_multiplier["*"] *= self.value
 
 class AddBlessingSlotEffect(Effect):
     def do_effect(self, player_stats: PlayerStats):
-        player_stats.max_blessings += self.value
+        player_stats.max_blessings["+"] += self.value
 
 class Upgrade:
     def __init__(self, name, id, description, base_cost, cost_growth_rate, effect, is_one_time = False):
