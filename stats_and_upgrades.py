@@ -6,17 +6,18 @@ class PlayerStats:
         self.fish_per_enter = 1
         self.fish_per_enter_multiplier = 1
         self.owned_upgrades = []
-
+        self.current_blessings = []
+        self.max_blessings = 1
 class Effect:
     def __init__(self, value):
         self.value = value
 
 class AdditivePerSecondEffect(Effect):
-    def effect(self, player_stats: PlayerStats):
+    def do_effect(self, player_stats: PlayerStats):
         player_stats.fish_per_second += self.value
 
 class AdditivePerEnterEffect(Effect):
-    def effect(self, player_stats: PlayerStats):
+    def do_effect(self, player_stats: PlayerStats):
         player_stats.fish_per_enter += 1
 
 class Upgrade:
