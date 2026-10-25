@@ -68,6 +68,7 @@ class Game:
             BlessingOfTheFish("Blessing of the Fish", "blessing_of_the_fish", " Every second there is a 10% chance for you to gain 10x your fish per second \n and a 1% chance for you to gain 100x your fish per second.", 1),
             CurseOfTheFish("Curse of the Fish", "curse_of_the_fish", " Every second there is a 10% chance for you to not gain any fish.", 1),
         ]
+        self.blessings_roller_status = ""
 
         # BASIC FISHING
         @self.key_bindings.add("enter")
@@ -135,8 +136,9 @@ class Game:
         ]
         i = 0
         count = 0
-        while count < min(self.upgrades_shown, len(stats_and_upgrades.available_upgrades_list)) and i < len(stats_and_upgrades.available_upgrades_list):
-            upgrade = stats_and_upgrades.available_upgrades_list[count]
+        while i < min(self.upgrades_shown, len(stats_and_upgrades.available_upgrades_list)):
+            upgrade = stats_and_upgrades.available_upgrades_list[i]
+            
             if upgrade.is_one_time and upgrade.level > 0:
                 i += 1
                 continue
@@ -145,7 +147,7 @@ class Game:
             lines.append("")
             i += 1
             count += 1
-        
+
         lines.append("Which upgrade would you like? ")
         
         return "\n".join(lines)
@@ -155,6 +157,7 @@ class Game:
             "BLESSINGS ROLLER",
             "Input E to exit",
             f"Current Fish: {self.stats.fish}",
+            self.blessings_roller_status,
             "",
             "My blessings:"
         ]
@@ -173,7 +176,7 @@ class Game:
         
     def _get_blessings_roller_choice_prompt(self):
         lines = [
-            "Choose Blessing number: "
+            "Choose Blessing number to replace: "
         ]
         return "\n".join(lines)
     
@@ -212,6 +215,7 @@ class Game:
                 
             upgrade_index = upgrade_index.strip().upper()
             if upgrade_index == "E":
+                self.upgrades_status = ""
                 self.current_ui = "main"
             else:
                 upgrade_index = index_list[int(upgrade_index)]
@@ -235,19 +239,25 @@ class Game:
                         )
             roll_blessing = roll_blessing.strip().upper()
             if roll_blessing == "Y":
-                blessing = self.choose_random_blessing()
-                print(blessing)
-                if len(self.stats.current_blessings) < self.stats.max_blessings:
-                    self.stats.current_blessings.append(blessing)
+                self.blessings_roller_status = ""
+                if self.blessings_cost > self.stats.fish:
+                    self.blessings_roller_status = "Ur too poor for that"
                 else:
-                    blessing_replace_index = await self.prompt_session.prompt_async(
-                                                self._get_blessings_roller_choice_prompt, 
-                                                key_bindings=KeyBindings(),
-                                                refresh_interval=0.5
-                                            )
-                    self.stats.current_blessings[int(blessing_replace_index)] = blessing
-                self.stats.fish -= self.blessings_cost
+                    
+                    blessing, probability = self.choose_random_blessing()
+                    if len(self.stats.current_blessings) < self.stats.max_blessings:
+                        self.stats.current_blessings.append(blessing)
+                    else:
+                        blessing_replace_index = await self.prompt_session.prompt_async(
+                                                    self._get_blessings_roller_choice_prompt, 
+                                                    key_bindings=KeyBindings(),
+                                                    refresh_interval=0.5
+                                                )
+                        self.stats.current_blessings[int(blessing_replace_index)] = blessing
+                    self.stats.fish -= self.blessings_cost
+                    self.blessings_roller_status = f"Successful roll of the {blessing.name} blessing! ({probability * 100}% chance)"
             elif roll_blessing == "E" or roll_blessing == "N":
+                self.blessings_roller_status = ""
                 self.current_ui = "main"
                 
                 
@@ -255,7 +265,12 @@ class Game:
     def choose_random_blessing(self):
         # Weighted randomness
         weights = [b.roll_weight for b in self.available_blessings]
-        return random.choices(self.available_blessings, weights=weights, k=1)[0]
+        chosen = random.choices(self.available_blessings, weights=weights, k=1)[0]
+        
+        total_weight = sum(weights)
+        chosen_index = self.available_blessings.index(chosen)
+        probability = weights[chosen_index]/total_weight
+        return chosen, probability
     
     def check_milestones(self):
         # Check if certain milestones are reached to unlock more upgrades
@@ -268,16 +283,25 @@ class Game:
             if upgrade.id == "fisher_cat":
                 if upgrade.level == 5:
                     self._set_upgrades_shown_amount(2)
+            if upgrade.id == "cat_boat":
+                if upgrade.level == 5:
+                    self._set_upgrades_shown_amount(5)
         # UPGRADE MILESTONES - MONEY MILESTONES
         # Unlock iron claws at 500 fish
         if self.stats.fish >= 500:
             self._set_upgrades_shown_amount(3)
         
+        if self.stats.fish >= 1000:
+            self._set_upgrades_shown_amount(4)
+            
+        # UPGRADE MILESTONES - BLESSING MILESTONES
+        if len(self.stats.current_blessings) > 0:
+            self._set_upgrades_shown_amount(6)
         
         ## UI MILESTONES
         
         # UI MILESTONES - MONEY MILESTONES
-        if self.stats.fish >= 1000:
+        if self.stats.fish >= 2000:
             if len(self.key_bindings.get_bindings_for_keys("b")) == 0:
                 self._register_ui_option(UIOption("Blessings Roller", "B", "show_blessings_roller"))
     
