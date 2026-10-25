@@ -237,6 +237,8 @@ class Game:
                     upgrade_index = index_list[int(upgrade_index)]
                 except ValueError:
                     self.upgrades_status = "Invalid input. Please enter 'E' or a valid index."
+                except IndexError:
+                    self.upgrades_status = "Invalid input. Please enter an index within the range."
                 else:
                     chosen_upgrade = stats_and_upgrades.available_upgrades_list[upgrade_index]
                     self.upgrades_status = ""
