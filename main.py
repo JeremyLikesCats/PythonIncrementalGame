@@ -27,11 +27,16 @@ class Blessing:
         self.is_curse = is_curse
         
         
-# Blessing of the fish - every second there is a 20% chance for you to gain 10x your fish per second and 2% chance for you to gain 100x your fish per second
+# Blessing of the fish - every second there is a 10% chance for you to gain 10x your fish per second and 1% chance for you to gain 100x your fish per second.
 class BlessingOfTheFish(Blessing):
     def do_effect(self, player_stats: stats_and_upgrades.PlayerStats):
         player_stats.current_blessings.append(self)
     
+# Curse of the fish - every second there is a 10% chance that you don't gain any money.
+class CurseOfTheFish(Blessing):
+    def do_effect(self, player_stats: stats_and_upgrades.PlayerStats):
+        player_stats.current_blessings.append(self)
+
 
 class Game:
     def clear_screen(self):
@@ -49,7 +54,7 @@ class Game:
         self.current_ui = "main" # UI would switch from "main", "upgrades", etc.
 
         # MAIN UI
-        self.main_ui_passive_status = ""
+        self.main_ui_passive_statuses = []
         
         # UPGRADES UI
         self.upgrades_shown = 1
@@ -59,7 +64,10 @@ class Game:
         
         # BLESSINGS
         self.blessings_cost = 1000
-        self.available_blessings = [BlessingOfTheFish("Blessing of the Fish", "blessing_of_the_fish", " Every second there is a 10% chance for you to gain 10x your fish per second \n and a 1% chance for you to gain 100x your fish per second.", 1)]
+        self.available_blessings = [
+            BlessingOfTheFish("Blessing of the Fish", "blessing_of_the_fish", " Every second there is a 10% chance for you to gain 10x your fish per second \n and a 1% chance for you to gain 100x your fish per second.", 1),
+            CurseOfTheFish("Curse of the Fish", "curse_of_the_fish", " Every second there is a 10% chance for you to not gain any fish.", 1),
+        ]
 
         # BASIC FISHING
         @self.key_bindings.add("enter")
@@ -89,8 +97,8 @@ class Game:
         while True:
             await asyncio.sleep(1)
             # Also Resets passive status
-            self.main_ui_passive_status = ""
-            
+            self.main_ui_passive_statuses = []
+            previous_fish = self.stats.fish
             self.stats.fish += self.stats.fish_per_second * self.stats.fish_per_second_multiplier
             
             # Blessings that affect passive income
@@ -98,15 +106,19 @@ class Game:
                 if blessing.id == "blessing_of_the_fish":
                     if random.randint(1, 100) <= 10:
                         self.stats.fish += self.stats.fish_per_second * self.stats.fish_per_second_multiplier * 10
-                        self.main_ui_passive_status += f"Blessing of the fish! +{self.stats.fish_per_second * self.stats.fish_per_second_multiplier * 10} "
+                        self.main_ui_passive_statuses.append(f"Blessing of the fish! +{self.stats.fish_per_second * self.stats.fish_per_second_multiplier * 10} ")
                     if random.randint(1, 100) <= 1:
                         self.stats.fish += self.stats.fish_per_second * self.stats.fish_per_second_multiplier * 100
-                        self.main_ui_passive_status += f"ULTIMATE Blessing of the fish! +{self.stats.fish_per_second * self.stats.fish_per_second_multiplier * 100}"
-
+                        self.main_ui_passive_statuses.append(f"ULTIMATE Blessing of the fish! +{self.stats.fish_per_second * self.stats.fish_per_second_multiplier * 100}")
+                elif blessing.id == "curse_of_the_fish":
+                    if random.randint(1, 100) <= 10:
+                        self.stats.fish = previous_fish
+                        self.main_ui_passive_statuses.append(f"Curse of the fish. No fish was produced.")
             
     def _main_screen_ui(self):
         options = "  ".join(opt.formatted() for opt in self.ui_options)
-        main_ui_passive_status = f" ({self.main_ui_passive_status.strip()})" if self.main_ui_passive_status else ""
+        
+        main_ui_passive_status = "".join([f" ({i.strip()})" for i in self.main_ui_passive_statuses])
         return (
             f"Fish_TerminalOS 3.0\n\n"
             f"Options:\n{options}\n\n"
