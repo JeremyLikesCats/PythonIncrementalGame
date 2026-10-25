@@ -176,8 +176,23 @@ class Game:
         
     def _get_blessings_roller_choice_prompt(self):
         lines = [
-            "Choose Blessing number to replace: "
+            "BLESSINGS ROLLER",
+            "Input E to exit",
+            f"Current Fish: {self.stats.fish}",
+            self.blessings_roller_status,
+            "",
+            "My blessings:"
         ]
+        for blessing_index in range(self.stats.max_blessings):
+            if blessing_index >= len(self.stats.current_blessings):
+                lines.append(f"[{blessing_index}] None")
+            else:
+                blessing = self.stats.current_blessings[blessing_index]
+                lines.append(f"[{blessing_index}] {blessing.name}")
+                lines.append(blessing.description)
+
+        lines.append("")
+        lines.append("Choose Blessing number to replace: ")
         return "\n".join(lines)
     
     
@@ -218,18 +233,22 @@ class Game:
                 self.upgrades_status = ""
                 self.current_ui = "main"
             else:
-                upgrade_index = index_list[int(upgrade_index)]
-                chosen_upgrade = stats_and_upgrades.available_upgrades_list[upgrade_index]
-                self.upgrades_status = ""
-                if chosen_upgrade.cost > self.stats.fish:
-                    self.upgrades_status = "Ur too poor for that"
+                try:
+                    upgrade_index = index_list[int(upgrade_index)]
+                except ValueError:
+                    self.upgrades_status = "Invalid input. Please enter 'E' or a valid index."
                 else:
-                    if chosen_upgrade not in self.stats.owned_upgrades:
-                        self.stats.owned_upgrades.append(chosen_upgrade)
-                    self.stats.fish -= chosen_upgrade.cost
-                    chosen_upgrade.buy()
-                    chosen_upgrade.effect.do_effect(self.stats)
-                    self.upgrades_status = f"Successful purchase of {chosen_upgrade.name}!"
+                    chosen_upgrade = stats_and_upgrades.available_upgrades_list[upgrade_index]
+                    self.upgrades_status = ""
+                    if chosen_upgrade.cost > self.stats.fish:
+                        self.upgrades_status = "Ur too poor for that"
+                    else:
+                        if chosen_upgrade not in self.stats.owned_upgrades:
+                            self.stats.owned_upgrades.append(chosen_upgrade)
+                        self.stats.fish -= chosen_upgrade.cost
+                        chosen_upgrade.buy()
+                        chosen_upgrade.effect.do_effect(self.stats)
+                        self.upgrades_status = f"Successful purchase of {chosen_upgrade.name}!"
                     
         elif self.current_ui == "blessings_roller":
             roll_blessing = await self.prompt_session.prompt_async(
@@ -248,17 +267,28 @@ class Game:
                     if len(self.stats.current_blessings) < self.stats.max_blessings:
                         self.stats.current_blessings.append(blessing)
                     else:
-                        blessing_replace_index = await self.prompt_session.prompt_async(
-                                                    self._get_blessings_roller_choice_prompt, 
-                                                    key_bindings=KeyBindings(),
-                                                    refresh_interval=0.5
-                                                )
-                        self.stats.current_blessings[int(blessing_replace_index)] = blessing
-                    self.stats.fish -= self.blessings_cost
-                    self.blessings_roller_status = f"Successful roll of the {blessing.name} blessing! ({probability * 100}% chance)"
+                        hasError = True
+                        while hasError:
+                            self.clear_screen()
+                            hasError = False
+                            blessing_replace_index = await self.prompt_session.prompt_async(
+                                                        self._get_blessings_roller_choice_prompt, 
+                                                        key_bindings=KeyBindings(),
+                                                        refresh_interval=0.5
+                                                    )
+                            blessing_replace_index = blessing_replace_index.strip()
+                            try:
+                                self.stats.current_blessings[int(blessing_replace_index.strip())] = blessing
+                            except:
+                                self.blessings_roller_status = "Enter a valid index!"
+                                hasError = True
+                        self.stats.fish -= self.blessings_cost
+                        self.blessings_roller_status = f"Successful roll of the {blessing.name} blessing! ({probability * 100}% chance)"
             elif roll_blessing == "E" or roll_blessing == "N":
                 self.blessings_roller_status = ""
                 self.current_ui = "main"
+            else:
+                self.blessings_roller_status = "Invalid input. Please enter a valid letter as stated."
                 
                 
                 
