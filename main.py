@@ -3,7 +3,6 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
-import os
 import stats_and_upgrades
 import asyncio
 
@@ -74,10 +73,17 @@ class Game:
             f"Current Fish: {self.stats.fish}",
             self.upgrades_status,
         ]
-        for i in range(min(self.upgrades_shown, len(stats_and_upgrades.available_upgrades_list))):
-            upgrade = stats_and_upgrades.available_upgrades_list[i]
-            lines.append(f"[{i}] {upgrade.name}: {upgrade.cost} fish [x{upgrade.level}]")
-        
+        i = 0
+        count = 0
+        while count < min(self.upgrades_shown, len(stats_and_upgrades.available_upgrades_list)) and i < len(stats_and_upgrades.available_upgrades_list):
+            upgrade = stats_and_upgrades.available_upgrades_list[count]
+            if upgrade.is_one_time and upgrade.level > 0:
+                i += 1
+                continue
+            lines.append(f"[{count}] {upgrade.name}: {upgrade.cost} fish [x{upgrade.level}]")
+            i += 1
+            count += 1
+
         lines.append("Which upgrade would you like? ")
         return "\n".join(lines)
         
@@ -98,11 +104,26 @@ class Game:
                 key_bindings=KeyBindings(),
                 refresh_interval=0.5
             )
+            
+            # Create a link between index and count (list index vs number that shows up in ui)
+            index_list = []
+            count = 0
+            i = 0
+            while count < min(self.upgrades_shown, len(stats_and_upgrades.available_upgrades_list)) and i < len(stats_and_upgrades.available_upgrades_list):
+                upgrade = stats_and_upgrades.available_upgrades_list[i]
+                if upgrade.is_one_time and upgrade.level > 0:
+                    i += 1
+                    continue
+                index_list.append(i)
+                i += 1
+                count += 1
+                
+                
             upgrade_index = upgrade_index.strip().upper()
             if upgrade_index == "E":
                 self.current_ui = "main"
             else:
-                upgrade_index = int(upgrade_index)
+                upgrade_index = index_list[int(upgrade_index)]
                 chosen_upgrade = stats_and_upgrades.available_upgrades_list[upgrade_index]
                 self.upgrades_status = ""
                 if chosen_upgrade.cost > self.stats.fish:
@@ -115,11 +136,30 @@ class Game:
                     chosen_upgrade.effect.effect(self.stats)
                     self.upgrades_status = f"Successful purchase of {chosen_upgrade.name}!"
     
+    def check_milestones(self):
+        # Check if certain milestones are reached to unlock more upgrades
+        
+        # UPGRADE MILESTONES - OWNED UPGRADES 
+        for upgrade in self.stats.owned_upgrades:
+            # Unlock Boat Cat at fisher cat lvl 5
+            if upgrade.id == "fisher_cat":
+                if upgrade.level == 5:
+                    self._set_upgrades_shown_amount(2)
+        # MONEY MILESTONES
+        # Unlock iron claws at 500 fish
+        if self.stats.fish >= 500:
+            self._set_upgrades_shown_amount(3)
+                                              
+    def _set_upgrades_shown_amount(self, amount):
+        self.upgrades_shown = max(amount, self.upgrades_shown)
+                    
+            
     
     async def run_game(self):
         income_task = asyncio.create_task(self._passive_income())
         while True:
             await self.show_ui()
+            self.check_milestones()
             
         
 if __name__ == "__main__":
