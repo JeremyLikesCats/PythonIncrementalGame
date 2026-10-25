@@ -258,8 +258,11 @@ class Game:
             if upgrade.is_one_time and upgrade.level > 0:
                 i += 1
                 continue
-            lines.append(f"[<ansigreen>{count}</ansigreen>] <b>{upgrade.name}</b>: <ansiyellow> {upgrade.cost}</ansiyellow> fish [x{upgrade.level}]")
-            lines.append(f"{upgrade.description}")
+            color = "ansigreen"
+            if upgrade.cost > self.stats.fish:
+                color = "ansired"
+            lines.append(f"[<{color}>{count}</{color}>] <b>{upgrade.name}</b>: <ansiyellow> {upgrade.cost}</ansiyellow> fish [x{upgrade.level}]")
+            lines.append(f"<ansigray>{upgrade.description}</ansigray>")
             lines.append("")
             i += 1
             count += 1
@@ -279,10 +282,10 @@ class Game:
         ]
         for blessing_index in range(self._calculate_max_blessings()):
             if blessing_index >= len(self.stats.current_blessings):
-                lines.append(f"[{blessing_index}] None")
+                lines.append(f"[<ansigreen>{blessing_index}</ansigreen>] None")
             else:
                 blessing = self.stats.current_blessings[blessing_index]
-                lines.append(f"[{blessing_index}] {blessing.name}")
+                lines.append(f"[<ansigreen>{blessing_index}</ansigreen>] {blessing.name}")
                 lines.append(blessing.description)
 
         lines.append("")
@@ -451,6 +454,7 @@ class Game:
             if upgrade.id == "fish_factory":
                 if upgrade.level >= 10:
                     self._set_upgrades_shown_amount(9)
+            
         # UPGRADE MILESTONES - MONEY MILESTONES
         # Unlock iron claws at 500 fish
         if self.stats.all_time_revenue >= 500:

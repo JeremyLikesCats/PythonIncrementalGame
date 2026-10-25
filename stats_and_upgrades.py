@@ -79,7 +79,7 @@ available_upgrades = {
     "fish_factory": Upgrade("Fish Factory", "fish_factory", "This fish factory mass produces +100 fish every second.", 1000, 1.07, AdditivePerSecondEffect(100)),
     "golden_claws": Upgrade("Golden Claws", "golden_claws", "Even sharper claws. One-time upgrade. +1 fish per enter hit.", 4000, 1, AdditivePerEnterEffect(1), True),
     "blessed_halo": Upgrade("Blessed Halo", "blessed_halo", "This holy item provides you with an extra blessing slot.", 6000, 1, AddBlessingSlotEffect(1), True),
-    "milk": Upgrade("Milk", "milk", "This milk tastes strange... at least it makes your fish generation 100% faster!", 8000, 1, AdditiveMultiplicativePerSecondEffect(1), True),
-    
+    "milk": Upgrade("Milk", "milk", "This milk tastes strange... at least it makes your fish generation 100% faster!", 10000, 1, AdditiveMultiplicativePerSecondEffect(1), True),
+    "fish_planet": Upgrade("Fish Planet", "fish_planet", "A whole planet of fish! Produces +500 fish every second. ", 10000, 1.07, AdditivePerEnterEffect(1), True),
 }
 available_upgrades_list = list(available_upgrades.values())
