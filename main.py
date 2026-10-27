@@ -95,7 +95,6 @@ class Game:
             PoseidonsBlessing("Poseidon's Blessing", "poseidons_blessing", " Your fish per second is scaled by 1.5x multiplied by number of digits of revenue from fish you *hand fished*.", 2),
             MrBlessing("Mr. Blessing", "mr_blessing", " Gain 2 blessing slots. Only one of this blessing can exist at the same time.", 1, False, True),
             BartonCurse("Barton's Curse", "bartoncurse", " Barton comes out of no where and takes 5% of your fish every 10 seconds.  ", 2, True, False)
-            
         ]
         self.blessings_roller_status = ""
 

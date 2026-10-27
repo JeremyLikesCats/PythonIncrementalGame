@@ -1,0 +1,13 @@
+{
+    "fish": 4639,
+    "total_enter_revenue": 28,
+    "all_time_revenue": 10159,
+    "upgrades_shown": 7,
+    "owned_upgrades": {
+        "fisher_cat": 1,
+        "iron_claws": 1
+    },
+    "current_blessings": [
+        "blessing_of_the_fish"
+    ]
+}
