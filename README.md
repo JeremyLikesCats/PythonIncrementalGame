@@ -2,6 +2,16 @@
 
 This is a Mini Incremental Game based on fishing to warm up my python skills! Includes basic features such as saving, upgrades, etc. 
 
+## How to run
+
+This project uses prompt_toolkit. Please install that with pip first.
+
+The project can be simply run with:
+```python
+python3 main.py
+```
+
+
 ## Features
 **Main menu** - manually fish for, well, fish, in this menu!
 
