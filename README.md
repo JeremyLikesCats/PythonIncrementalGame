@@ -4,7 +4,7 @@ This is a Mini Incremental Game based on fishing to warm up my python skills! In
 
 ## Features
 **Main menu** - manually fish for, well, fish, in this menu!
-![Main menu](Screenshots/main_menu.png)
+![Main menu](Screenshots/main_menu_image.png)
 
 **Upgrades** - upgrades you can buy to increase your fish production! You unlock more as you progress.
 There are 9 upgrades currently in the game as shown here:
