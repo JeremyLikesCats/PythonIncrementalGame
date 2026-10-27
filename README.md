@@ -3,9 +3,10 @@
 This is a Mini Incremental Game based on fishing to warm up my python skills! Includes basic features such as saving, upgrades, etc. 
 
 ## Features
-Main menu - manually fish for, well, fish, in this menu!
+**Main menu** - manually fish for, well, fish, in this menu!
+![Main menu](Screenshots/main_menu.png)
 
-Upgrades - upgrades you can buy to increase your fish production! You unlock more as you progress.
+**Upgrades** - upgrades you can buy to increase your fish production! You unlock more as you progress.
 There are 9 upgrades currently in the game as shown here:
 ```python
 available_upgrades = {
@@ -20,8 +21,9 @@ available_upgrades = {
     "fish_planet": Upgrade("Fish Planet", "fish_planet", "A whole planet of fish! Produces +500 fish every second. ", 10000, 1.07, AdditivePerEnterEffect(1)),
 }
 ```
+![Upgrades](Screenshots/upgrades.png)
 
-Blessings - special bonuses that can be rolled in the "Blessings Roller". These can be "blessings" or "curses", giving positive/negative effects depending on what you roll!
+**Blessings** - special bonuses that can be rolled in the "Blessings Roller". These can be "blessings" or "curses", giving positive/negative effects depending on what you roll!
 There are currently 5 blessings as shown:
 ```python
 self.available_blessings = [
@@ -32,9 +34,10 @@ self.available_blessings = [
     BartonCurse("Barton's Curse", "bartoncurse", " Barton comes out of no where and takes 5% of your fish every 10 seconds.  ", 2, True, False)
 ]
 ```
+![Blessings](Screenshots/blessings.png)
 
 Here is an example of a blessing (blessing of the fish) in action:
+![Working example of blessings](Screenshots/blessing_working_example.png)
 
-
-
-To run this project you need to install prompt_toolkit with pip.
+**Saving** - I managed to implement a fully working saving system with json!
+![saving](Screenshots/save_data.png)
